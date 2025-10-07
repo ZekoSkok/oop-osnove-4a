@@ -1,6 +1,6 @@
 import tkinter as tk
 
-#Faza 1: "Mozak"
+# Faza 1: "Mozak"
 class Ucenik:
     def __init__(self, ime, prezime, razred):
         self.ime = ime
@@ -9,40 +9,26 @@ class Ucenik:
 
     def __str__(self):
         return f"{self.prezime} {self.ime} ({self.razred})"
-    
 
-#Faza 2: "GUI"
 
+# Faza 2: GUI
 class EvidencijaApp:
-    
     def __init__(self, root):
         self.root = root
         self.ucenici = []
 
-        #  Struktura prozora 
+        # Konfiguracija prozora
         self.root.title("Evidencija učenika")
         self.root.geometry("500x400")
 
-        #  Konfig resp
-        self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(0, weight=1)
-
-        #  Frames
-        #    forma
+        # Frames
         unos_frame = tk.Frame(self.root, padx=10, pady=10)
         unos_frame.grid(row=0, column=0, sticky="NSEW")
 
-        #    prikaz
         prikaz_frame = tk.Frame(self.root, padx=10, pady=10)
         prikaz_frame.grid(row=1, column=0, sticky="NSEW")
 
-        # resp okvira
-        unos_frame.columnconfigure(1, weight=1)
-
-        prikaz_frame.columnconfigure(0, weight=1)
-        prikaz_frame.rowconfigure(0, weight=1)
-
-        #  Widgeti - unos
+        # Widgeti za unos
         tk.Label(unos_frame, text="Ime:").grid(row=0, column=0, pady=5, sticky="W")
         self.ime_entry = tk.Entry(unos_frame)
         self.ime_entry.grid(row=0, column=1, pady=2, sticky="EW")
@@ -58,7 +44,7 @@ class EvidencijaApp:
         self.spremi_gumb = tk.Button(unos_frame, text="Dodaj učenika", command=self.dodaj_ucenika)
         self.spremi_gumb.grid(row=3, column=0, columnspan=2, pady=10)
 
-        #  Widgeti - prikaz
+        # Widgeti za prikaz
         self.lista_label = tk.Label(prikaz_frame, text="Popis učenika:")
         self.lista_label.pack(anchor='nw', padx=10, pady=10)
 
@@ -69,33 +55,31 @@ class EvidencijaApp:
         self.ucenici_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         self.scrollbar.config(command=self.ucenici_text.yview)
-        
+
     def dodaj_ucenika(self):
-        self.ime = self.ime_entry.get()
-        self.prezime = self.prezime_entry.get()
-        self.razred = self.razred_entry.get()
-        ucenik = Ucenik(self.ime, self.prezime, self.razred)
-        if self.ime and self.prezime and self.razred:
+        ime = self.ime_entry.get().strip()
+        prezime = self.prezime_entry.get().strip()
+        razred = self.razred_entry.get().strip()
+
+        if ime and prezime and razred:
+            ucenik = Ucenik(ime, prezime, razred)
             self.ucenici.append(ucenik)
-    
+        
+        self.refresh()
+
     def refresh(self):
         self.ucenici_text.delete(1.0, tk.END)
+        self.ime_entry.delete(0, tk.END)
+        self.prezime_entry.delete(0, tk.END)
+        self.razred_entry.delete(0, tk.END)
         for ucenik in self.ucenici:
             self.ucenici_text.insert(tk.END, f"{ucenik}\n")
+
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = EvidencijaApp(root)
-root.mainloop()
-
-
-
-
-
-
-
-
-        
+    root.mainloop()
 
 
 
