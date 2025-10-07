@@ -14,15 +14,7 @@ class Ucenik:
 #Faza 2: "GUI"
 
 class EvidencijaApp:
-    def dodaj_ucenika(self):
-        self.ime = self.ime_entry.get()
-        self.prezime = self.prezime_entry.get()
-        self.razred = self.razred_entry.get()
-        ucenik = Ucenik(self.ime, self.prezime, self.razred)
-        if self.ime and self.prezime and self.razred:
-            if ucenik not in self.ucenici:
-                self.ucenici.append(ucenik)
-
+    
     def __init__(self, root):
         self.root = root
         self.ucenici = []
@@ -77,7 +69,15 @@ class EvidencijaApp:
         self.ucenici_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         self.scrollbar.config(command=self.ucenici_text.yview)
-
+        
+    def dodaj_ucenika(self):
+        self.ime = self.ime_entry.get()
+        self.prezime = self.prezime_entry.get()
+        self.razred = self.razred_entry.get()
+        ucenik = Ucenik(self.ime, self.prezime, self.razred)
+        if self.ime and self.prezime and self.razred:
+            self.ucenici.append(ucenik)
+    
     def refresh(self):
         self.ucenici_text.delete(1.0, tk.END)
         for ucenik in self.ucenici:
