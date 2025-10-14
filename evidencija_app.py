@@ -1,4 +1,7 @@
 import tkinter as tk
+import csv
+import xml.etree.ElementTree as et
+from xml.dom import minidom
 
 # Faza 1: "Mozak"
 class Ucenik:
@@ -46,7 +49,7 @@ class EvidencijaApp:
         self.spremi_gumb.grid(row=3, column=0, columnspan=2, pady=10)
 
         self.izmijeni_gumb = tk.Button(unos_frame, text="Spremi izmjene", command=self.spremi_izmjene)
-        self.izmijeni_gumb.grid(row=4, column=0, columnspan=2, pady=5)
+        self.izmijeni_gumb.grid(row=3, column=2, columnspan=2, pady=5)
 
         # Widgeti za prikaz
         self.lista_label = tk.Label(prikaz_frame, text="Popis učenika:")
@@ -60,6 +63,17 @@ class EvidencijaApp:
         scrollbar = tk.Scrollbar(prikaz_frame, orient="vertical", command=self.listbox.yview)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.listbox.config(yscrollcommand=scrollbar.set)
+
+        self.csv_gumb =  tk.Button(unos_frame, text='Spremi csv', command=self.spremi_csv)
+        self.csv_gumb.grid(row=4, column=0, columnspan=2, pady=5)
+        self.csv_ucitaj = tk.Button(unos_frame, text='Učitaj csv', command=self.ucitaj_csv)
+        self.csv_ucitaj.grid(row=4, column=2, columnspan=2, pady=5)
+
+        self.xml_spremi = tk.Button(unos_frame, text='Spremi xml', command=self.spremi_xml)
+        self.xml_spremi.grid(row=5, column=0, columnspan=2, pady=5)
+        self.xml_ucitaj = tk.Button(unos_frame, text='Učitaj xml', command=self.ucitaj_xml)
+        self.xml_ucitaj.grid(row=5, column=2, columnspan=2, pady=5)
+        
 
     def dodaj_ucenika(self):
         ime = self.ime_entry.get().strip()
@@ -104,6 +118,67 @@ class EvidencijaApp:
             self.refresh()
 
             self.odabrani_ucenik_index = None
+        
+        
+    def spremi_csv(self):
+
+        with open('ucenici.csv', 'w', newline='') as csvfile:
+            polja= ['Ime', 'Prezime', 'Razred']
+            writer = csv.DictWriter(csvfile, fieldnames=polja)
+            writer.writeheader()
+            for u in self.ucenici:
+                writer.writerow({'Ime': u.ime, 'Prezime': u.prezime, 'Razred': u.razred})
+        print(f'Spremljeno u ucenici.csv')
+
+    def ucitaj_csv(self):
+        ucitani_ucenici = []
+        with open('ucenici.csv', 'r', newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                ucitani_ucenici.append(Ucenik(row['Ime'], row['Prezime'], row['Razred']))
+        self.ucenici = ucitani_ucenici
+        self.refresh()
+        print("Učenici učitani iz 'ucenici.csv'")
+        return ucitani_ucenici
+    
+    def spremi_xml(self):
+        root = et.Element('ucenici')
+        for u in self.ucenici:
+            ucenik_el = et.SubElement(root, 'ucenik')
+            et.SubElement(ucenik_el, 'ime').text = u.ime
+            et.SubElement(ucenik_el, 'prezime').text = u.prezime
+            et.SubElement(ucenik_el, 'razred').text = u.razred
+
+        xml_str = et.tostring(root, encoding='utf-8', method='xml')
+        dom = minidom.parseString(xml_str)
+        xml_str = dom.toprettyxml(indent=' ')
+
+        with open('ucenici.xml', 'w', encoding='utf-8') as dat:
+            dat.write(xml_str)
+        
+        print(f'Spremljeno u ucenici.xml')
+
+    def ucitaj_xml(self):
+        ucitano = []
+        tree = et.parse('ucenici.xml')
+        root = tree.getroot()
+
+        for ucenik_el in root.findall('ucenik'):
+            ime = ucenik_el.find('ime').text
+            prezime = ucenik_el.find('prezime').text
+            razred = ucenik_el.find('razred').text
+            ucitano.append(Ucenik(ime, prezime, razred))
+        
+        self.ucenici = ucitano
+        self.refresh() 
+        print(f'Učitano iz ucenici.xml')
+        return ucitano 
+
+
+
+            
+
+
 
 
 if __name__ == "__main__":
