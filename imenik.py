@@ -78,6 +78,10 @@ class ImenikApp:
             messagebox.showwarning("Nedostaju informacije!")
             return
 
+        if not len(telefon)==10:
+            messagebox.showwarning("Broj telefona prekratak")
+            return
+
         kontakt = Kontakt(ime, email, telefon)
         self.kontakti.append(kontakt)
         self.osvjezi_prikaz()
