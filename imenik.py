@@ -59,12 +59,12 @@ class ImenikApp:
         gumb_frame = tk.Frame(root, padx=10, pady=10)
         gumb_frame.grid(row=2, column=0, sticky="EW")
 
-        spremi_gumb = tk.Button(gumbi_frame, text="Spremi kontakte", command=self.spremi_kontakte)
+        spremi_gumb = tk.Button(gumb_frame, text="Spremi kontakte", command=self.spremi_kontakte)
         spremi_gumb.grid(row=0, column=0, padx=5, pady=5)
 
         #Tu bi inače došo učitaj btn, al ne treba nam zbog toga što kasnije implementiram pametno učitavanje
 
-        obrisi_gumb = tk.Button(gumbi_frame, text="Obriši kontakt", command=self.obrisi_kontakt)
+        obrisi_gumb = tk.Button(gumb_frame, text="Obriši kontakt", command=self.obrisi_kontakt)
         obrisi_gumb.grid(row=0, column=2, padx=5, pady=5)
 
         self.ucitaj_kontakte()
