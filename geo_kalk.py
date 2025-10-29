@@ -1,15 +1,3 @@
-#!/usr/bin/env python3
-"""Jednostavan geometrijski kalkulator (površina i opseg)
-
-Sadrži:
-- Baznu apstraktnu klasu `Oblik` s metodama `izracunaj_povrsinu` i `izracunaj_opseg`.
-- Izvedene klase: `Krug`, `Pravokutnik`, `Kvadrat` (Kvadrat nasljeđuje Pravokutnik).
-- Tkinter GUI s Radiobutton-ima za odabir oblika, dinamičkim poljima za unos dimenzija,
-  gumbom "Izračunaj" i labelama za prikaz rezultata.
-
-Upotreba: pokrenuti ovaj modul i koristiti GUI.
-"""
-
 from __future__ import annotations
 import math
 import tkinter as tk
@@ -17,16 +5,12 @@ from tkinter import ttk, messagebox
 from abc import ABC, abstractmethod
 
 
-class Oblik(ABC):
-    """Apstraktna baza za geometrijske oblike."""
+class Oblik:
+    def izracunaj_povrsinu(self):
+        pass
 
-    @abstractmethod
-    def izracunaj_povrsinu(self) -> float:
-        raise NotImplementedError
-
-    @abstractmethod
-    def izracunaj_opseg(self) -> float:
-        raise NotImplementedError
+    def izracunaj_opseg(self):
+        pass
 
 
 class Krug(Oblik):
@@ -45,10 +29,10 @@ class Pravokutnik(Oblik):
         self.sirina = sirina
         self.visina = visina
 
-    def izracunaj_povrsinu(self) -> float:
+    def izracunaj_povrsinu(self):
         return self.sirina * self.visina
 
-    def izracunaj_opseg(self) -> float:
+    def izracunaj_opseg(self):
         return 2 * (self.sirina + self.visina)
 
 
@@ -57,7 +41,7 @@ class Kvadrat(Pravokutnik):
         super().__init__(stranica, stranica)
 
 
-def main():
+def kalkulator():
     root = tk.Tk()
     root.title("Geo Kalkulator — Površina i Opseg")
     root.resizable(False, False)
@@ -66,15 +50,14 @@ def main():
     frm = ttk.Frame(root, padding=pad)
     frm.grid(column=0, row=0, sticky=(tk.N, tk.S, tk.E, tk.W))
 
-    # Varijabla za odabir oblika
     oblik_var = tk.StringVar(value="Krug")
 
-    shapes_frame = ttk.LabelFrame(frm, text="Odaberi oblik")
-    shapes_frame.grid(column=0, row=0, sticky=tk.W, padx=pad, pady=pad)
+    oblici_frame = ttk.LabelFrame(frm, text="Odaberi oblik")
+    oblici_frame.grid(column=0, row=0, sticky=tk.W, padx=pad, pady=pad)
 
-    ttk.Radiobutton(shapes_frame, text="Krug", variable=oblik_var, value="Krug", command=lambda: update_inputs()).grid(column=0, row=0, sticky=tk.W, padx=4, pady=2)
-    ttk.Radiobutton(shapes_frame, text="Pravokutnik", variable=oblik_var, value="Pravokutnik", command=lambda: update_inputs()).grid(column=1, row=0, sticky=tk.W, padx=4, pady=2)
-    ttk.Radiobutton(shapes_frame, text="Kvadrat", variable=oblik_var, value="Kvadrat", command=lambda: update_inputs()).grid(column=2, row=0, sticky=tk.W, padx=4, pady=2)
+    ttk.Radiobutton(oblici_frame, text="Krug", variable=oblik_var, value="Krug", command=lambda: update_inputs()).grid(column=0, row=0, sticky=tk.W, padx=4, pady=2)
+    ttk.Radiobutton(oblici_frame, text="Pravokutnik", variable=oblik_var, value="Pravokutnik", command=lambda: update_inputs()).grid(column=1, row=0, sticky=tk.W, padx=4, pady=2)
+    ttk.Radiobutton(oblici_frame, text="Kvadrat", variable=oblik_var, value="Kvadrat", command=lambda: update_inputs()).grid(column=2, row=0, sticky=tk.W, padx=4, pady=2)
 
     # Input polja
     inputs_frame = ttk.LabelFrame(frm, text="Dimenzije")
@@ -123,8 +106,7 @@ def main():
         ent_stranica.delete(0, tk.END)
 
 
-    def update_inputs():
-        # Remove all widgets from inputs_frame
+    def osvježi_input():
         for child in inputs_frame.winfo_children():
             child.grid_forget()
 
@@ -146,7 +128,7 @@ def main():
         opseg_var.set("—")
 
 
-    def calculate():
+    def izracunaj():
         shape = oblik_var.get()
         try:
             if shape == "Krug":
@@ -189,12 +171,10 @@ def main():
         except Exception as e:
             messagebox.showerror(title="Greška", message=f"Došlo je do greške: {e}")
 
-
-    # Initialize inputs for default selection
-    update_inputs()
+    osvježi_input()
 
     root.mainloop()
 
 
 if __name__ == "__main__":
-    main()
+    kalkulator()
