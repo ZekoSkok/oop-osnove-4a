@@ -60,7 +60,7 @@ class Shape:
 # ----------------------
 #  Concrete shapes
 # ----------------------
-class Circle(Shape):
+class Krug(Shape):
     name = "Krug"
     tip = "2D"
     params = [('r', 'Radijus', 5.0)]
@@ -79,12 +79,12 @@ class Circle(Shape):
         cx, cy = w/2, h/2
         base = min(w, h) * preview_ratio
         # scale by ratio of param/default
-        default = Circle.params[0][2]
+        default = Krug.params[0][2]
         scale = max(0.2, min(3.0, self.values['r'] / default))
         r = base * scale
         canvas.create_oval(cx-r, cy-r, cx+r, cy+r, outline=ACCENT, width=3)
 
-class Rectangle(Shape):
+class Pravokutnik(Shape):
     name = "Pravokutnik"
     tip = "2D"
     params = [('a', 'Širina', 6.0), ('b', 'Visina', 4.0)]
@@ -105,20 +105,37 @@ class Rectangle(Shape):
         base_h = base * (self.values['b'] / maxdim)
         canvas.create_rectangle(cx-base_w, cy-base_h, cx+base_w, cy+base_h, outline="#26A69A", width=3)
 
-class Square(Rectangle):
+class Kvadrat(Pravokutnik):
     name = "Kvadrat"
     tip = "2D"
     params = [('a', 'Stranica', 5.0)]
 
+    def area(self):
+        return self.values['a'] * self.values['a']
+    
+    def perimeter(self):
+        return 4 * self.values['a']
+
     def __init__(self, **kwargs):
         # forward to Rectangle with a=a, b=a
         val = {}
-        a = float(kwargs.get('a', Square.params[0][2]))
+        a = float(kwargs.get('a', Kvadrat.params[0][2]))
         val['a'] = a
         val['b'] = a
         super().__init__(**val)
 
-class Sphere(Shape):
+    def draw(self, canvas, preview_ratio=0.4):
+        canvas.delete("all")
+        w, h = max(canvas.winfo_width(), 10), max(canvas.winfo_height(), 10)
+        cx, cy = w/2, h/2
+        base = min(w, h) * preview_ratio
+        default = Kvadrat.params[0][2]
+        scale = max(0.2, min(3.0, self.values['a'] / default))
+        r = base * scale * 0.7
+        canvas.create_rectangle(cx-r, cy-r, cx+r, cy+r, outline="#26A69A", width=3)
+
+
+class Kugla(Shape):
     name = "Kugla"
     tip = "3D"
     params = [('r', 'Radijus', 4.0)]
@@ -136,14 +153,14 @@ class Sphere(Shape):
         w, h = max(canvas.winfo_width(), 10), max(canvas.winfo_height(), 10)
         cx, cy = w/2, h/2
         base = min(w, h) * preview_ratio
-        default = Sphere.params[0][2]
+        default = Kugla.params[0][2]
         scale = max(0.2, min(3.0, self.values['r'] / default))
         r = base * scale
         canvas.create_oval(cx-r, cy-r, cx+r, cy+r, outline=ACCENT, width=3)
         # simple shading arc
-        canvas.create_oval(cx-r*0.6, cy-r*0.2, cx+r*0.6, cy+r*0.2, outline=SUBTLE)
+        canvas.create_oval(cx-r, cy-r*0.2, cx+r, cy+r*0.2, outline=SUBTLE)
 
-class Cube(Shape):
+class Kocka(Shape):
     name = "Kocka"
     tip = "3D"
     params = [('a', 'Stranica', 4.0)]
@@ -161,7 +178,7 @@ class Cube(Shape):
         w, h = max(canvas.winfo_width(), 10), max(canvas.winfo_height(), 10)
         cx, cy = w/2, h/2
         base = min(w, h) * preview_ratio
-        default = Cube.params[0][2]
+        default = Kocka.params[0][2]
         scale = max(0.3, min(2.5, self.values['a'] / default))
         s = base * scale
         offset = s * 0.35
@@ -175,7 +192,7 @@ class Cube(Shape):
         canvas.create_line(cx + s, cy + s, cx + s - offset, cy + s - offset)
         canvas.create_line(cx - s, cy + s, cx - s - offset, cy + s - offset)
 
-class Cuboid(Shape):
+class Kvadar(Shape):
     name = "Kvadar"
     tip = "3D"
     params = [('a', 'Duljina', 6.0), ('b', 'Širina', 4.0), ('c', 'Visina', 3.0)]
@@ -210,14 +227,14 @@ class Cuboid(Shape):
 
 # registries
 SHAPES_2D = {
-    Circle.name: Circle,
-    Rectangle.name: Rectangle,
-    Square.name: Square,
+    Krug.name: Krug,
+    Pravokutnik.name: Pravokutnik,
+    Kvadrat.name: Kvadrat,
 }
 SHAPES_3D = {
-    Sphere.name: Sphere,
-    Cube.name: Cube,
-    Cuboid.name: Cuboid,
+    Kugla.name: Kugla,
+    Kocka.name: Kocka,
+    Kvadar.name: Kvadar,
 }
 
 # ----------------------
@@ -261,13 +278,8 @@ class Shapesy:
         self.main_frame.bind("<Configure>", self.on_main_frame_configure)
         self.scroll_canvas.bind("<Configure>", self.on_canvas_configure)
 
-    def on_main_frame_configure(self, event=None):
-        self.scroll_canvas.configure(scrollregion=self.scroll_canvas.bbox("all"))
-
-    def on_canvas_configure(self, event):
-        self.scroll_canvas.itemconfig(self.scroll_window, width=event.width)
-
-        # Build UI sections stacked vertically
+        #UI builder
+        # Inside __init__
         self.build_shape_selector()
         self.build_param_section()
         self.build_action_row()
@@ -277,6 +289,13 @@ class Shapesy:
         # initialize
         self.shape_type_var.set("2D")
         self.refresh_shape_list()
+
+
+    def on_main_frame_configure(self, event=None):
+        self.scroll_canvas.configure(scrollregion=self.scroll_canvas.bbox("all"))
+
+    def on_canvas_configure(self, event):
+        self.scroll_canvas.itemconfig(self.scroll_window, width=event.width)
 
     # ----------------------
     # header
