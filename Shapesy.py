@@ -10,8 +10,8 @@ BG = "#F5FAFF"
 PANEL = "#FFFFFF"
 ACCENT = "#1E88E5"      # material blue
 SUBTLE = "#7B8FA1"
-ACTION = "#00C853"      # green for save
-WARN = "#FF5252"        # delete
+ACTION = "#00C853"      # save btn
+WARN = "#FF5252"        # delete btn
 BTN_TEXT = "#FFFFFF"
 FONT = ("Segoe UI", 10)
 
@@ -22,7 +22,7 @@ class Shape:
     """
     Bazna klasa za sve oblike.
     Podklase definiraju: name, params (lista (key,label,default)), tip ("2D"/"3D")
-    Svaka podklasa treba nadjačati area(), perimeter(), volume() i draw().
+    Svaka podklasa nadjačava area(), perimeter(), volume() i draw().
     """
     name = "Shape"
     params = []   # [('r','Radius',5), ('a','Side',3)...]
@@ -257,10 +257,15 @@ class Shapesy:
         # Create window that holds main_frame
         self.scroll_window = self.scroll_canvas.create_window((0, 0),window=self.main_frame,anchor="nw")
 
-# Proper event bindings
-self.main_frame.bind("<Configure>", self.on_main_frame_configure)
-self.scroll_canvas.bind("<Configure>", self.on_canvas_configure)
+        # Proper event bindings
+        self.main_frame.bind("<Configure>", self.on_main_frame_configure)
+        self.scroll_canvas.bind("<Configure>", self.on_canvas_configure)
 
+    def on_main_frame_configure(self, event=None):
+        self.scroll_canvas.configure(scrollregion=self.scroll_canvas.bbox("all"))
+
+    def on_canvas_configure(self, event):
+        self.scroll_canvas.itemconfig(self.scroll_window, width=event.width)
 
         # Build UI sections stacked vertically
         self.build_shape_selector()
