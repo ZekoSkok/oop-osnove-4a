@@ -1,7 +1,10 @@
+from email.mime import base
 import tkinter as tk
 from tkinter import messagebox, filedialog, scrolledtext, ttk
 import xml.etree.ElementTree as ET
 import math
+
+from geo_kalk import Cuboid
 
 # ----------------------
 #  Styling / Theme
@@ -15,9 +18,9 @@ WARN = "#FF5252"        # delete btn
 BTN_TEXT = "#FFFFFF"
 FONT = ("Segoe UI", 10)
 
-# ----------------------
-#  Shape model base
-# ----------------------
+# --------------------
+#  Base model oblika
+# --------------------
 class Shape:
     """
     Bazna klasa za sve oblike.
@@ -29,16 +32,16 @@ class Shape:
     tip = "2D"
 
     def __init__(self, **kwargs):
-        # fill params from kwargs; if missing, use default from class
+        # params iz kwargs ili default
         self.values = {}
         for key, label, default in self.params:
             try:
                 self.values[key] = float(kwargs.get(key, default))
             except Exception:
-                # fallback in case of bad conversion
+                # fallback u slučaju greške; spriječava error pri krivom unosu-
                 self.values[key] = float(default)
 
-    # geometry methods: override as appropriate
+    # placeholder za izračune
     def area(self):
         return None
 
@@ -48,8 +51,7 @@ class Shape:
     def volume(self):
         return None
 
-    # draw on given canvas; must center drawing and use canvas size
-    # preview_ratio: how big relative to canvas (0..0.5)
+    # centriranje crteža na canavas i skaliranje
     def draw(self, canvas, preview_ratio=0.4):
         canvas.delete("all")
         w, h = max(canvas.winfo_width(), 10), max(canvas.winfo_height(), 10)
@@ -57,9 +59,9 @@ class Shape:
         # default simple placeholder
         canvas.create_text(cx, cy, text=self.name, fill=SUBTLE, font=("Segoe UI", 12))
 
-# ----------------------
-#  Concrete shapes
-# ----------------------
+# --------
+#  Oblici
+# --------
 class Krug(Shape):
     name = "Krug"
     tip = "2D"
@@ -78,7 +80,6 @@ class Krug(Shape):
         w, h = max(canvas.winfo_width(), 10), max(canvas.winfo_height(), 10)
         cx, cy = w/2, h/2
         base = min(w, h) * preview_ratio
-        # scale by ratio of param/default
         default = Krug.params[0][2]
         scale = max(0.2, min(3.0, self.values['r'] / default))
         r = base * scale
@@ -117,7 +118,7 @@ class Kvadrat(Pravokutnik):
         return 4 * self.values['a']
 
     def __init__(self, **kwargs):
-        # forward to Rectangle with a=a, b=a
+        # proslijedi Pravokutniku s a=a, b=a
         val = {}
         a = float(kwargs.get('a', Kvadrat.params[0][2]))
         val['a'] = a
@@ -133,6 +134,78 @@ class Kvadrat(Pravokutnik):
         scale = max(0.2, min(3.0, self.values['a'] / default))
         r = base * scale * 0.7
         canvas.create_rectangle(cx-r, cy-r, cx+r, cy+r, outline="#26A69A", width=3)
+
+class Trapez(Shape):
+    name = "Trapez"
+    tip = "2D"
+    params = [
+        ('a', 'Donja baza', 8.0),
+        ('b', 'Gornja baza', 5.0),
+        ('h', 'Visina', 4.0)
+    ]
+
+    def area(self):
+        a = self.values['a']
+        b = self.values['b']
+        h = self.values['h']
+        return (a + b) * h / 2
+
+    def perimeter(self):
+        a = self.values['a']
+        b = self.values['b']
+        h = self.values['h']
+
+        # Izračun kosih stranica za jednakokračni trapez
+        # s = sqrt((|a-b|/2)^2 + h^2)
+        half_diff = abs(a - b) / 2
+        s = math.sqrt(half_diff**2 + h**2)
+
+        return a + b + 2 * s
+
+    def draw(self, canvas, preview_ratio=0.5):
+        canvas.delete("all")
+
+        w = max(canvas.winfo_width(), 50)
+        h_canvas = max(canvas.winfo_height(), 50)
+        cx, cy = w / 2, h_canvas / 2
+
+        # OSNOVNO SKALIRANJE
+        base = min(w, h_canvas) * preview_ratio
+
+        a = self.values['a']
+        b = self.values['b']
+        h = self.values['h']
+
+        # Normalizacija
+        max_p = max(a, b, h, 1)
+        scale = base / max_p
+
+        # Konačne dimenzije
+        A = a * scale
+        B = b * scale
+        H = h * scale
+
+        # Donja baza – centrirano
+        x1 = cx - A/2
+        x2 = cx + A/2
+        y1 = cy + H/2
+
+        # Gornja baza – kraća, pomaknuta prema sredini
+        x3 = cx - B/2
+        x4 = cx + B/2
+        y2 = cy - H/2
+
+        # Crtanje trapeza
+        canvas.create_polygon(
+            x1, y1,   # donja lijeva
+            x2, y1,   # donja desna
+            x4, y2,   # gornja desna
+            x3, y2,   # gornja lijeva
+            outline=ACCENT,
+            fill="",
+            width=3
+        )
+
 
 
 class Kugla(Shape):
@@ -157,7 +230,7 @@ class Kugla(Shape):
         scale = max(0.2, min(3.0, self.values['r'] / default))
         r = base * scale
         canvas.create_oval(cx-r, cy-r, cx+r, cy+r, outline=ACCENT, width=3)
-        # simple shading arc
+        # luk za 3D efekt
         canvas.create_oval(cx-r, cy-r*0.2, cx+r, cy+r*0.2, outline=SUBTLE)
 
 class Kocka(Shape):
@@ -173,24 +246,42 @@ class Kocka(Shape):
         a = self.values['a']
         return a ** 3
 
-    def draw(self, canvas, preview_ratio=0.32):
+    def draw(self, canvas, preview_ratio=0.45):
         canvas.delete("all")
-        w, h = max(canvas.winfo_width(), 10), max(canvas.winfo_height(), 10)
-        cx, cy = w/2, h/2
+        w = max(canvas.winfo_width(), 50)
+        h = max(canvas.winfo_height(), 50)
+        cx, cy = w / 2, h / 2
+
+        # Osnovna veličina previewa
         base = min(w, h) * preview_ratio
+
+        # Skaliranje prema dimenziji (stranica)
         default = Kocka.params[0][2]
-        scale = max(0.3, min(2.5, self.values['a'] / default))
-        s = base * scale
-        offset = s * 0.35
-        # front square
-        canvas.create_rectangle(cx - s, cy - s, cx + s, cy + s, outline="#8E24AA", width=3)
-        # back square offset up-left
-        canvas.create_rectangle(cx - s - offset, cy - s - offset, cx + s - offset, cy + s - offset, outline="#8E24AA", width=2)
-        # connect
-        canvas.create_line(cx - s, cy - s, cx - s - offset, cy - s - offset)
-        canvas.create_line(cx + s, cy - s, cx + s - offset, cy - s - offset)
-        canvas.create_line(cx + s, cy + s, cx + s - offset, cy + s - offset)
-        canvas.create_line(cx - s, cy + s, cx - s - offset, cy + s - offset)
+        scale = max(0.2, min(3.0, self.values["a"] / default))
+
+        s = base * scale   # duljina stranice
+        # Offset za pseudo-3D efekt
+        offset = s * 0.4
+
+        # Koordinate prednje stranice (kvadrat)
+        x1, y1 = cx - s/2, cy - s/2
+        x2, y2 = cx + s/2, cy + s/2
+
+        # Koordinate zadnje stranice (pomaknute)
+        x1b, y1b = x1 - offset, y1 - offset
+        x2b, y2b = x2 - offset, y2 - offset
+
+        # Crtanje prednjeg kvadrata
+        canvas.create_rectangle(x1, y1, x2, y2, outline="#26A69A", width=3)
+
+        # Crtanje zadnjeg kvadrata
+        canvas.create_rectangle(x1b, y1b, x2b, y2b, outline="#80CBC4", width=2)
+
+        # Poveznice između stranica
+        canvas.create_line(x1, y1, x1b, y1b, fill="#26A69A", width=2)
+        canvas.create_line(x2, y1, x2b, y1b, fill="#26A69A", width=2)
+        canvas.create_line(x1, y2, x1b, y2b, fill="#26A69A", width=2)
+        canvas.create_line(x2, y2, x2b, y2b, fill="#26A69A", width=2)
 
 class Kvadar(Shape):
     name = "Kvadar"
@@ -205,31 +296,57 @@ class Kvadar(Shape):
         a, b, c = self.values['a'], self.values['b'], self.values['c']
         return a * b * c
 
-    def draw(self, canvas, preview_ratio=0.32):
+    def draw(self, canvas, preview_ratio=0.45):
         canvas.delete("all")
-        w, h = max(canvas.winfo_width(), 10), max(canvas.winfo_height(), 10)
-        cx, cy = w/2, h/2
-        base = min(w, h) * preview_ratio
-        # normalize by largest param
-        maxp = max(self.values['a'], self.values['b'], self.values['c'], 1.0)
-        rw = base * (self.values['a'] / maxp)
-        rh = base * (self.values['b'] / maxp)
-        offset = base * 0.28 * (self.values['c'] / maxp)
-        # front
-        canvas.create_rectangle(cx - rw, cy - rh, cx + rw, cy + rh, outline="#FF7043", width=3)
-        # back
-        canvas.create_rectangle(cx - rw - offset, cy - rh - offset, cx + rw - offset, cy + rh - offset, outline="#FF7043", width=2)
-        # connect
-        canvas.create_line(cx - rw, cy - rh, cx - rw - offset, cy - rh - offset)
-        canvas.create_line(cx + rw, cy - rh, cx + rw - offset, cy - rh - offset)
-        canvas.create_line(cx + rw, cy + rh, cx + rw - offset, cy + rh - offset)
-        canvas.create_line(cx - rw, cy + rh, cx - rw - offset, cy + rh - offset)
+        w = max(canvas.winfo_width(), 50)
+        h = max(canvas.winfo_height(), 50)
 
-# registries
+        cx, cy = w / 2, h / 2
+
+        # Osnovni preview scale
+        base = min(w, h) * preview_ratio
+
+        # Dimenzije oblika
+        a = self.values["a"]  # širina
+        b = self.values["b"]  # visina
+        c = self.values["c"]  # dubina
+    
+        # Normalizacija na default vrijednosti
+        defA, defB, defC = Kvadar.params[0][2], Kvadar.params[1][2], Kvadar.params[2][2]
+
+        scaleA = a / defA
+        scaleB = b / defB
+        scaleC = c / defC
+        # Konačna duljina stranica
+        w_front = base * scaleA
+        h_front = base * scaleB
+        offset = base * 0.35 * scaleC  # dubina
+
+        # Prednja stranica
+        x1, y1 = cx - w_front/2, cy - h_front/2
+        x2, y2 = cx + w_front/2, cy + h_front/2
+
+        # Zadnja stranica (pomaknuta)
+        x1b, y1b = x1 - offset, y1 - offset
+        x2b, y2b = x2 - offset, y2 - offset
+
+        # Crtanje prednjeg pravokutnika
+        canvas.create_rectangle(x1, y1, x2, y2, outline="#1565C0", width=3)
+
+        # Crtanje stražnjeg pravokutnika
+        canvas.create_rectangle(x1b, y1b, x2b, y2b, outline="#90CAF9", width=2)
+        # Spajanje bridova
+        canvas.create_line(x1, y1, x1b, y1b, fill="#1565C0", width=2)
+        canvas.create_line(x2, y1, x2b, y1b, fill="#1565C0", width=2)
+        canvas.create_line(x1, y2, x1b, y2b, fill="#1565C0", width=2)
+        canvas.create_line(x2, y2, x2b, y2b, fill="#1565C0", width=2)
+
+# registri oblika
 SHAPES_2D = {
     Krug.name: Krug,
     Pravokutnik.name: Pravokutnik,
     Kvadrat.name: Kvadrat,
+    Trapez.name: Trapez,
 }
 SHAPES_3D = {
     Kugla.name: Kugla,
@@ -237,25 +354,24 @@ SHAPES_3D = {
     Kvadar.name: Kvadar,
 }
 
-# ----------------------
-#  Main App UI
-# ----------------------
+# ---------------
+#  UI Aplikacije
+# ---------------
 class Shapesy:
     def __init__(self, root):
         self.root = root
         root.title("Shapesy")
         root.configure(bg=BG)
-        root.geometry("420x820")  # mobile-friendly portrait
+        root.geometry("420x820")  # za fon?!?!?
         root.minsize(360, 640)
 
         self.current_shape_class = None
         self.current_shape_obj = None
         self.history = []  # list of dicts
 
-        # top frame (logo + title + menu)
         self.build_header()
 
-        # -------- Main container with scrolling (fixed version) --------
+        # Glavni scrollable container
         self.container = tk.Frame(root, bg=BG)
         self.container.pack(fill="both", expand=True)
 
@@ -325,6 +441,8 @@ class Shapesy:
         menu = tk.Menu(self.root, tearoff=0)
         menu.add_command(label="O aplikaciji", command=self.show_about)
         menu.add_command(label="Formule", command=self.show_formulas)
+        menu.add_command(label="Spremi povijest", command=self.save_xml)
+        menu.add_command(label="Učitaj povijest", command=self.load_xml)
         try:
             menu.tk_popup(self.root.winfo_pointerx(), self.root.winfo_pointery())
         finally:
@@ -483,7 +601,7 @@ class Shapesy:
 
         delete_btn = tk.Button(box, text="Obriši zapis", bg=WARN, fg=BTN_TEXT, font=FONT,
                                command=self.delete_history_item)
-        delete_btn.pack(side="right", padx=4)
+        delete_btn.pack(side="left", padx=4)
 
     # ----------------------
     # Canvas preview
@@ -524,14 +642,7 @@ class Shapesy:
         tk.Label(box, text="Povijest izračuna", bg=BG, fg=SUBTLE, font=FONT).pack(anchor="w")
         self.history_list = tk.Listbox(box, height=8)
         self.history_list.pack(fill="both", expand=True, pady=6)
-        # save/load buttons
-        row = tk.Frame(box, bg=BG)
-        row.pack(fill="x")
-        save_btn = tk.Button(row, text="Spremi XML", bg=ACTION, fg=BTN_TEXT, command=self.save_xml)
-        load_btn = tk.Button(row, text="Učitaj XML", bg="#29B6F6", fg=BTN_TEXT, command=self.load_xml)
-        save_btn.pack(side="left", padx=6)
-        load_btn.pack(side="left", padx=6)
-
+    
     # ----------------------
     # Calculation / history logic
     # ----------------------
